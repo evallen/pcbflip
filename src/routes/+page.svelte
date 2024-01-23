@@ -28,61 +28,31 @@
         }
     }
 
-    let stage: Konva.Stage
-    let bottomLayer: Konva.Layer
+    let pcbTransform = {
+        translation: {
+            x: 0,
+            y: 0
+        }, 
+        scale: 1
+    };
+    let pcbTransformStr = `scale(${pcbTransform.scale}) translate(${pcbTransform.translation.x} ${pcbTransform.translation.y})`
 
-    const scaleBy = 1.20;
-    function canvasZoom(event: WheelEvent) {
-        let oldScale = stage.scaleX();
-        let pointer = stage.getPointerPosition();
-
-        let mousePointTo = {
-            x: (pointer!.x - stage.x()) / oldScale,
-            y: (pointer!.y - stage.y()) / oldScale,
-        }
-
-        // decide zoom in or out
-        let direction = event.deltaY > 0 ? -1 : 1;
-        console.log(event.deltaY);
-        let thisScaleBy = scaleBy ** (Math.abs(event.deltaY) / 78);
-
-        let newScale = direction > 0 ? oldScale * thisScaleBy : oldScale / thisScaleBy;
-
-        stage.scale({ x: newScale, y: newScale });
-
-        let newPos = {
-            x: pointer!.x - mousePointTo.x * newScale,
-            y: pointer!.y - mousePointTo.y * newScale,
-        }
-        stage.position(newPos);
-    }
-
-    let scrollRate = 0.5;
-    function wheelHandler(e: CustomEvent) {
-        let event: WheelEvent = e.detail.evt;
-
-        if (event.ctrlKey) {
-            canvasZoom(event);
+    let scaleBy = 1.20;
+    function wheelHandler(event: WheelEvent) {
+        if (!event.ctrlKey) {
             return;
         }
 
-        let x = stage.x();
-        let y = stage.y();
-        
-        stage.x(x - scrollRate * event.deltaX);
-        stage.y(y - scrollRate * event.deltaY);
+        event.preventDefault();
+
+        pcbTransform.scale *= scaleBy ** (event.deltaY / 78);
+        pcbTransformStr = `scale(${pcbTransform.scale}) translate(${pcbTransform.translation.x} ${pcbTransform.translation.y})`
+        console.log("transforming ");
+        console.log(pcbTransformStr);
     }
 
-    let canvasContainerWidth = 0, canvasContainerHeight = 0;
+    $: console.log(pcbTransform);
 
-    $: resizeCanvas(canvasContainerWidth, canvasContainerHeight);
-
-    function resizeCanvas(width: number, height: number) {
-        console.log(`resize canvas ${width} x ${height}`);
-        stage?.width(width);
-        stage?.height(height);
-        console.log(stage);
-    }
 </script>
 
 <Splitpanes style="height: 100%">
@@ -94,26 +64,48 @@
                 </Button>
                 <p>{selected ? `${selected} selected` : 'none selected'}</p>
             </div>
-            <div 
+            <!-- <div 
                 id="canvasContainer" 
                 class="overflow-auto min-h-0 h-full" 
-                bind:clientWidth={canvasContainerWidth}
-                bind:clientHeight={canvasContainerHeight}
                 on:wheel={ (e) => { if (e.ctrlKey) e.preventDefault() }}>
                 <Stage 
-                    config={{ draggable: true }} 
+                    config={{ width: 5000, height: 4000, draggable: true }} 
                     bind:handle={stage} 
                     style="width: 100%, height: 100%"
                     on:wheel={wheelHandler}>
                     <Layer bind:handle={bottomLayer}>
-                        <!-- stuff here -->
                     </Layer>
                     <Layer>
                         <Image config={{ image, perfectDrawEnabled: false }} />
                     </Layer> 
                 </Stage>
+            </div> -->
+
+            <div id="canvasContainer" class="overflow-auto min-h-0 h-full no-flicker"
+                 on:wheel={wheelHandler}>
+                {#if selected}
+                    <img src="{selected}" class="no-flicker" alt="pic" style:transform={ `scale(${pcbTransform.scale})` } />
+                {/if}
             </div>
         </div>
     </Pane>
     <Pane>5</Pane>
 </Splitpanes>
+
+<style>
+    .no-flicker {
+        image-rendering: pixelated;
+       transform-style: preserve-3d; backface-visibility: hidden;  
+       /* perspective: 1000; */
+       /* transition:all 0.1s ease-in-out; */
+       /* filter: blur(0); */
+       /* transform: translate3d(0,0,0); */
+       -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden;  
+       /* -webkit-perspective: 1000; */
+       /* -webkit-transition:all 0.1s ease-in-out; */
+       /* -webkit-filter: blur(0); */
+       /* -webkit-transform: translate3d(0,0,0); */
+       /* -moz-backface-visibility:    hidden; */
+        /* /* -ms-backface-visibility:     hidden; */
+    }
+</style>
