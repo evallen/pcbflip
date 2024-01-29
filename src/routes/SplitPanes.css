@@ -1,0 +1,42 @@
+:global(.splitpanes__pane) {
+    background-color: none;
+}
+    
+:global(.splitpanes__splitter) {
+    background-color: #ccc;
+    position: relative;
+}
+
+:global(.splitpanes__splitter:before) {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    transition: opacity 0.4s;
+    background-color: rgba(255, 0, 0, 0.3);
+    opacity: 0;
+    z-index: 1;
+}
+
+:global(.splitpanes__splitter:hover:before) {
+    opacity: 1;
+}
+
+:global(.splitpanes__splitter.splitpanes__splitter__active) {
+    z-index: 2; /* Fix an issue of overlap fighting with a near hovered splitter */
+}
+
+:global(.splitpanes--vertical > .splitpanes__splitter:before) {
+    left: -10px;
+    right: -10px;
+    height: 100%;
+}
+:global(.splitpanes--vertical > .splitpanes__splitter:before:hover) {
+    cursor: col-resize;
+}
+:global(.splitpanes--horizontal > .splitpanes__splitter:before) {
+    top: -10px;
+    bottom: -10px;
+    width: 100%;
+    cursor: row-resize;
+}
