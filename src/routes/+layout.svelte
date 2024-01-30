@@ -4,6 +4,6 @@
 </script>
 
 <ModeWatcher />
-<div class="absolute inset-0">
+<div class="absolute inset-0 overflow-hidden">
 	<slot />
 </div>
