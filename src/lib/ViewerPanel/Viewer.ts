@@ -3,8 +3,8 @@
  */
 
 import Image from "./Image.svelte";
-import { type Area } from "./Viewer.svelte";
-import { writable, type Writable } from "svelte/store";
+import { SCALE_MAX, SCALE_MIN, SCROLL_RATE, SCALE_BY, type Area } from "./Viewer.svelte";
+import { writable, type Writable, get } from "svelte/store";
 import { type Transform } from "./Image.svelte";
 
 export let imageArea: Writable<Area | null> = writable(null);
@@ -72,4 +72,54 @@ export function setImageArea(images: Array<Image | undefined>) {
     }
 
     imageArea.set(newImageArea);
+}
+
+export function viewerZoom(e: WheelEvent) {
+    let transform = get(canvasTransform);
+    let actualScaleBy = SCALE_BY ** (-e.deltaY / 78);
+    let newScale = Math.min(SCALE_MAX, actualScaleBy * transform.scale);
+    newScale = Math.max(SCALE_MIN, newScale);
+
+    let viewerCoordinates = getViewerCoordinates(e);
+    let canvasCoordinates = {
+        x: viewerCoordinates.x - transform.x,
+        y: viewerCoordinates.y - transform.y
+    }
+
+    viewerZoomTo(canvasCoordinates.x, canvasCoordinates.y, newScale);
+}
+
+export function viewerZoomTo(viewerX: number, viewerY: number, scale: number) {
+    let transform = get(canvasTransform);
+    let factor = scale / transform.scale;
+    let newX = transform.x - (viewerX * (factor - 1));
+    let newY = transform.y - (viewerY * (factor - 1));
+    canvasTransform.set({
+        x: newX,
+        y: newY,
+        scale
+    });
+}
+
+export function viewerPan(e: WheelEvent, viewerWidth: number, viewerHeight: number) {
+    let area = get(imageArea);
+    if (!area) return;
+
+    let maxX = viewerWidth / 2;
+    let maxY = viewerHeight / 2;
+
+    let minX = viewerWidth / 2 - area.width;
+    let minY = viewerHeight / 2 - area.height;
+
+    let newX = area.x + (-e.deltaX * SCROLL_RATE);
+    let newY = area.y + (-e.deltaY * SCROLL_RATE);
+
+    newX = Math.max(Math.min(maxX, newX), minX);
+    newY = Math.max(Math.min(maxY, newY), minY);
+
+    canvasTransform.update((t: Transform) => { return {
+        ...t,
+        x: newX,
+        y: newY
+    }});
 }

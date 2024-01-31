@@ -2,7 +2,6 @@
     import Viewer from "./Viewer.svelte";
     import TopBar from "./TopBar.svelte";
 	import BottomBar from "./BottomBar.svelte";
-
     let frontSelected: string | null;
     let backSelected: string | null;
     let scale: number;

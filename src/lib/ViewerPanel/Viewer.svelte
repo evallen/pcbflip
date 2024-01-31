@@ -18,22 +18,20 @@
     import { convertFileSrc } from "@tauri-apps/api/tauri";
     import Image, { type Transform } from "./Image.svelte";
     import { Stage, Layer, Rect } from "svelte-konva";
-    import { wasKeyInForm, setImageArea, getViewerCoordinates } from "./Viewer";
-    import { imageArea, canvasTransform } from "./Viewer";
+    import { wasKeyInForm, setImageArea, viewerPan, viewerZoomTo, viewerZoom, imageArea, canvasTransform } from "./Viewer";
 
     export let frontSelected: string | null;
     export let backSelected: string | null;
     export let scale: number;
     $: $canvasTransform, frontImage, backImage, applyTransform();
 
-    let f = (x: Transform) => scale = x.scale;
-    let fInv = (x: number) => {
-        // canvasTransform.scale = x;
+    let updateSliderScale = (x: Transform) => scale = x.scale;
+    let centerZoomToScale = (x: number) => {
         viewerZoomTo(canvasContainerWidth / 2 - $canvasTransform.x, canvasContainerHeight / 2 - $canvasTransform.y, x);
         applyTransform();
     };
-    $: f($canvasTransform);
-    $: fInv(scale);
+    $: updateSliderScale($canvasTransform);
+    $: centerZoomToScale(scale);
 
     let canvasContainerWidth = 0, canvasContainerHeight = 0;
 
@@ -56,54 +54,12 @@
         }
     }
 
-    function viewerZoomTo(viewerX: number, viewerY: number, scale: number) {
-        let factor = scale / $canvasTransform.scale;
-        let newX = $canvasTransform.x - (viewerX * (factor - 1));
-        let newY = $canvasTransform.y - (viewerY * (factor - 1));
-        $canvasTransform = {
-            x: newX,
-            y: newY,
-            scale
-        }
-    }
-
-    function viewerZoom(e: WheelEvent) {
-        let actualScaleBy = SCALE_BY ** (-e.deltaY / 78);
-        let newScale = Math.min(SCALE_MAX, actualScaleBy * $canvasTransform.scale);
-        newScale = Math.max(SCALE_MIN, newScale);
-
-        let viewerCoordinates = getViewerCoordinates(e);
-        let canvasCoordinates = {
-            x: viewerCoordinates.x - $canvasTransform.x,
-            y: viewerCoordinates.y - $canvasTransform.y
-        }
-
-        viewerZoomTo(canvasCoordinates.x, canvasCoordinates.y, newScale);
-    }
-
     function wheelHandler(e: WheelEvent) {
         if (!$imageArea) return;
         if (e.ctrlKey) {
             viewerZoom(e);
-            return;
-        }
-
-        let maxX = canvasContainerWidth / 2;
-        let maxY = canvasContainerHeight / 2;
-
-        let minX = canvasContainerWidth / 2 - $imageArea.width;
-        let minY = canvasContainerHeight / 2 - $imageArea.height;
-
-        let newX = $imageArea.x + (-e.deltaX * SCROLL_RATE);
-        let newY = $imageArea.y + (-e.deltaY * SCROLL_RATE);
-
-        newX = Math.max(Math.min(maxX, newX), minX);
-        newY = Math.max(Math.min(maxY, newY), minY);
-
-        $canvasTransform = {
-            ...$canvasTransform,
-            x: newX,
-            y: newY
+        } else {
+            viewerPan(e, canvasContainerWidth, canvasContainerHeight);
         }
     }
 
