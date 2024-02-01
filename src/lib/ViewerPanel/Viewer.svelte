@@ -19,6 +19,7 @@
     import Image, { type Transform } from "./Image.svelte";
     import { Stage, Layer, Rect } from "svelte-konva";
     import { wasKeyInForm, setImageArea, viewerPan, viewerZoomTo, viewerZoom, imageArea, canvasTransform } from "./Viewer";
+	import Canvas from "./Canvas.svelte";
 
     export let frontSelected: string | null;
     export let backSelected: string | null;
@@ -116,17 +117,7 @@
             style:height={$imageArea.height}px>
         </div>
     {/if}
-    <Stage config={{ 
-        width: canvasContainerWidth, 
-        height: canvasContainerHeight, 
-        scale: { x: $canvasTransform.scale, y: $canvasTransform.scale },
-        x: $canvasTransform.x, 
-        y: $canvasTransform.y
-        }}>
-        <Layer>
-            <!-- <Rect config={{ x: 100, y: 100, width: 100, height: 100, fill: 'red' }} /> -->
-        </Layer>
-    </Stage>
+    <Canvas width={canvasContainerWidth} height={canvasContainerHeight} transform={$canvasTransform} />
 </div>
 
 <style>
