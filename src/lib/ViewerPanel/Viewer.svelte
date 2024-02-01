@@ -43,7 +43,8 @@
     let backTransform: Transform | undefined;
     let backImageOpacity = 0;
 
-    $: frontTransform, backTransform, setImageArea([frontImage, backImage]);
+    $: canvasContainerWidth, canvasContainerHeight, 
+        frontTransform, backTransform, setImageArea([frontImage, backImage]);
 
     function applyTransform() {
         if (frontImage) {
@@ -134,6 +135,7 @@
         transform: translate3d(0,0,0);
         -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
+        cursor: crosshair;
     }
 
     #wrapperBox {
