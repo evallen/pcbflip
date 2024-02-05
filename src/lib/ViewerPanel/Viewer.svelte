@@ -89,7 +89,7 @@
 <svelte:window on:keydown={keyDownHandler} />
 <div 
     id="canvasContainer" 
-    class="overflow-hidden min-h-0 h-full" 
+    class="overflow-hidden overflow-x-hidden min-h-0 h-full" 
     bind:clientWidth={canvasContainerWidth}
     bind:clientHeight={canvasContainerHeight}
     on:wheel={wheelHandler}
@@ -131,7 +131,7 @@
 
     #wrapperBox {
         position: absolute;
-        border: 5px solid red;
+        border: 1px dashed yellow;
         width: 100px;
         height: 100px;
     }

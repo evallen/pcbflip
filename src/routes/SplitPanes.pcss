@@ -3,7 +3,7 @@
 }
     
 :global(.splitpanes__splitter) {
-    background-color: #ccc;
+    background-color: hsl(var(--border));
     position: relative;
 }
 
@@ -31,12 +31,17 @@
     right: -10px;
     height: 100%;
 }
-:global(.splitpanes--vertical > .splitpanes__splitter:before:hover) {
+
+:global(.splitpanes--vertical > .splitpanes__splitter) {
     cursor: col-resize;
 }
+
 :global(.splitpanes--horizontal > .splitpanes__splitter:before) {
     top: -10px;
     bottom: -10px;
     width: 100%;
+}
+
+:global(.splitpanes--horizontal > .splitpanes__splitter) {
     cursor: row-resize;
 }

@@ -84,5 +84,6 @@
         border: 1px solid transparent;
         transform-origin: 1px 1px;
         position: absolute;
+        max-width: none;
     }
 </style>
