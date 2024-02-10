@@ -1,19 +1,20 @@
 <script lang="ts">
-    import { Splitpanes, Pane } from "svelte-splitpanes";
     import ViewerPanel from "$lib/ViewerPanel/ViewerPanel.svelte";
-	import Input from "$lib/components/ui/input/input.svelte";
-    import HomographyPanel from "$lib/HomographyPanel/HomographyPanel.svelte";
+    import RightPanel from "../lib/RightPanel/RightPanel.svelte";
+
+	import { appWindow, PhysicalSize } from '@tauri-apps/api/window';
+	import { onMount } from 'svelte';
+
+	onMount(async () => {
+		await appWindow.setMinSize(new PhysicalSize(1400, 800));
+	});
 </script>
 
-<Splitpanes theme="my-theme" style="height: 100%">
-    <Pane minSize={40}>
+<div class="flex flex-row h-full">
+    <div class="flex-grow min-w-0">
         <ViewerPanel />
-    </Pane>
-    <Pane maxSize={20} size={20} snapSize={10}>
-        <HomographyPanel />
-    </Pane>
-</Splitpanes>
-
-<style>
-    @import './SplitPanes.pcss';
-</style>
+    </div>
+    <div class="flex-shrink-0 w-[35rem] min-w-[35rem]" style="border-left: 1px solid hsl(var(--border))">
+        <RightPanel />
+    </div>
+</div>

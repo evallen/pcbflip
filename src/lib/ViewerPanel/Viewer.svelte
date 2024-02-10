@@ -12,12 +12,34 @@
         height: number
     };
 
+    export let canvas: Canvas;
+
+    export type Mode = {
+        begin: () => void;
+        undo: () => void;
+    }
+
+    let currentMode: Mode | null = null;
+
+    export function switchToMode(mode: Mode) {
+        if (mode === currentMode) {
+            return;
+        }
+
+        cancelMode();
+        mode.begin();
+        currentMode = mode;
+    }
+
+    export function cancelMode() {
+        currentMode?.undo()
+        currentMode = null;
+    }
 </script>
 
 <script lang="ts">
     import { convertFileSrc } from "@tauri-apps/api/tauri";
     import Image, { type Transform } from "./Image.svelte";
-    import { Stage, Layer, Rect } from "svelte-konva";
     import { wasKeyInForm, setImageArea, viewerPan, viewerZoomTo, viewerZoom, imageArea, canvasTransform } from "./Viewer";
 	import Canvas from "./Canvas.svelte";
 
@@ -67,7 +89,6 @@
 
     function keyDownHandler(e: KeyboardEvent) {
         if (e.repeat || wasKeyInForm(e)) return;
-        console.log(e.key);
         switch (e.key) {
             case "f":
                 frontImageOpacity = 1;
@@ -117,7 +138,7 @@
             style:height={$imageArea.height}px>
         </div>
     {/if}
-    <Canvas width={canvasContainerWidth} height={canvasContainerHeight} transform={$canvasTransform} />
+    <Canvas bind:this={canvas} width={canvasContainerWidth} height={canvasContainerHeight} transform={$canvasTransform} />
 </div>
 
 <style>

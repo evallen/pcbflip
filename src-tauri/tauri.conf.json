@@ -18,6 +18,9 @@
       },
       "protocol": {
         "asset": true
+      },
+      "window": {
+        "setMinSize": true
       }
     },
     "bundle": {

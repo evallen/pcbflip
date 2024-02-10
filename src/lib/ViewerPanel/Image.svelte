@@ -19,34 +19,6 @@
 
     $: transformString = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
 
-    function getImageCoordinates(localX: number, localY: number) {
-        let x = localX - transform.x;
-        let y = localY - transform.y;
-        return {x, y};
-    }
-
-    // export function zoomBy(localX: number, localY: number, factor: number) {
-    //     transform.scale *= factor;
-
-    //     let imageCoords = getImageCoordinates(localX, localY);
-    //     transform.x -= imageCoords.x * (factor - 1);
-    //     transform.y -= imageCoords.y * (factor - 1);
-    // }
-
-    // export function zoomTo(localX: number, localY: number, scale: number) {
-    //     zoomBy(localX, localY, scale / transform.scale);
-    // }
-
-    // export function translateBy(x: number, y: number) {
-    //     transform.x += x;
-    //     transform.y += y;
-    // }
-
-    // export function translateTo(x: number, y: number) {
-    //     transform.x = x;
-    //     transform.y = y;
-    // }
-
     export function img() {
         return _img;
     }

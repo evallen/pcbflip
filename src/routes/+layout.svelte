@@ -2,6 +2,7 @@
 	import '../app.pcss';
 	import { ModeWatcher } from 'mode-watcher';
 	import Sonner from '$lib/components/ui/sonner/sonner.svelte';
+
 </script>
 
 <ModeWatcher />

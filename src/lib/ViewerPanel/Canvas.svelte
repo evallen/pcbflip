@@ -1,28 +1,41 @@
-<script lang="ts" context="module">
-    import { type Writable, writable } from 'svelte/store';
-
-    export let dimBackground: Writable<boolean> = writable(false);
-</script>
-
 <script lang="ts">
-	import { Stage, Layer, type KonvaMouseEvent, type KonvaDragTransformEvent, Rect } from 'svelte-konva';
+	import { Stage, Layer, type KonvaMouseEvent, Rect } from 'svelte-konva';
 	import { type Transform } from './Image.svelte';
 	import Konva from 'konva';
-	import { KeyPointStatus, keyPoints, setNextKeyPoint } from '$lib/HomographyPanel/Homography';
-	import type { Vector2d } from '$lib/misc/types';
+	import { frontKeyPoints } from '../RightPanel/HomographyPanel/Homography';
 
+	// --- Props ---------------------------------------------------------------
 	export let transform: Transform;
 	export let width: number;
 	export let height: number;
 
+	// --- Canvas context ------------------------------------------------------
 	let stage: Konva.Stage;
 	let mainLayer: Konva.Layer;
 	let bottomStaticLayer: Konva.Layer;
-    let markers: Konva.Group[] = [];
+	let topStaticLayer: Konva.Layer;
 
-	$: transform.scale, fixScales();
+	// --- Other variables -----------------------------------------------------
+	let _dimBackground: boolean = false;
 
-	function fixScales() {
+	type ClickListener = (e: KonvaMouseEvent) => void;
+	let clickListeners: ClickListener[] = [];
+
+	// --- Public functions ----------------------------------------------------
+	export function getContext() {
+		return {
+			stage,
+			bottomStaticLayer,
+			mainLayer,
+			topStaticLayer
+		};
+	}
+
+	export function dimBackground(value: boolean) {
+		_dimBackground = value;
+	}
+
+	export function fixScales() {
 		mainLayer?.getChildren().forEach((n) =>
 			n.setAttrs({
 				scaleX: 1 / transform.scale,
@@ -30,89 +43,29 @@
 			})
 		);
 	}
-    
 
-    keyPoints.subscribe(points => {
-        markers.forEach(marker => marker.remove());
-        markers = points
-                    .filter(point => point.status === KeyPointStatus.Set)
-                    .map((point, idx) => createMarker(point.pos, idx.toString()));
-        markers.forEach(marker => mainLayer?.add(marker));
+	export function addClickListener(listener: ClickListener) {
+		clickListeners.push(listener);
+	}
 
-        fixScales();
-    });
+	export function removeClickListener(listener: ClickListener) {
+		let idx = clickListeners.indexOf(listener);
+		if (!idx) return;
 
-    function createMarker(pos: Vector2d, labelStr: string) {
-		const size = 60;
+		clickListeners.splice(idx, 1);
+	}
 
-		let marker = new Konva.Group({
-			x: pos.x,
-			y: pos.y,
-			draggable: true
-		});
+	// --- Reactive declarations -----------------------------------------------
+	// Whenever the scale changes, ensure main layer elements stay
+	// the same size.
+	$: transform.scale, fixScales();
 
-		let vertLine = new Konva.Line({
-			points: [0, -size / 2, 0, size / 2],
-			stroke: 'white',
-			strokeWidth: 2,
-			strokeScaleEnabled: false
-		});
-
-		let horLine = new Konva.Line({
-			points: [-size / 2, 0, size / 2, 0],
-			stroke: 'white',
-			strokeWidth: 2,
-			strokeScaleEnabled: false
-		});
-
-		let circ = new Konva.Circle({
-			x: 0,
-			y: 0,
-			width: size * 0.2,
-			height: size * 0.2,
-			stroke: 'white',
-			strokeWidth: 2
-		});
-
-		let bgCirc = new Konva.Circle({
-			x: 0,
-			y: 0,
-			width: size,
-			height: size,
-			fill: 'rgba(0,0,0,0)'
-		});
-
-		marker.on('mousemove', () => {
-			bgCirc.fill('rgba(0,0,0,0.2)');
-			stage.container().style.cursor = 'move';
-		});
-
-		marker.on('mouseout', () => {
-			bgCirc.fill('rgba(0,0,0,0)');
-			stage.container().style.cursor = 'inherit';
-		});
-
-		let label = new Konva.Text({
-			x: size * 0.2,
-			y: -size * 0.4,
-			text: labelStr.toString(),
-			stroke: 'white'
-		});
-
-		marker.add(bgCirc);
-		marker.add(vertLine);
-		marker.add(horLine);
-		marker.add(circ);
-		marker.add(label);
-
-        return marker;
-    }
-
+	// --- Event listeners -----------------------------------------------------
 	function onclick(e: KonvaMouseEvent) {
 		let pointerPos = mainLayer.getRelativePointerPosition();
 		if (!pointerPos) return;
 
-		setNextKeyPoint(pointerPos);
+		clickListeners.forEach(listener => listener(e));
 	}
 </script>
 
@@ -125,16 +78,18 @@
 	on:click={onclick}
 >
 	<Layer bind:handle={bottomStaticLayer}>
-        {#if $dimBackground}
-            <Rect config={{
-                x: 0,
-                y: 0,
-                width: width,
-                height: height,
-                fill: 'rgba(0,0,0,0.5)',
-            }} />
-        {/if}
-    </Layer>
+		{#if _dimBackground}
+			<Rect
+				config={{
+					x: 0,
+					y: 0,
+					width: width,
+					height: height,
+					fill: 'rgba(0,0,0,0.5)'
+				}}
+			/>
+		{/if}
+	</Layer>
 	<Layer
 		config={{
 			scale: { x: transform.scale, y: transform.scale },
@@ -143,5 +98,5 @@
 		}}
 		bind:handle={mainLayer}
 	></Layer>
-	<Layer bind:handle={bottomStaticLayer}></Layer>
+	<Layer bind:handle={topStaticLayer}></Layer>
 </Stage>
