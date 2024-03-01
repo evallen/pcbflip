@@ -14,12 +14,14 @@
 
     export let canvas: Canvas;
 
-    export type Mode = {
-        begin: () => void;
-        undo: () => void;
+    export interface Mode {
+        context?: any;
+        begin: (this: Mode) => void;
+        undo: (this: Mode) => void;
     }
 
     let currentMode: Mode | null = null;
+    export let currentModeChanged: EventDispatchStore = eventDispatchStore();
 
     export function switchToMode(mode: Mode) {
         if (mode === currentMode) {
@@ -29,12 +31,33 @@
         cancelMode();
         mode.begin();
         currentMode = mode;
+        currentModeChanged.trigger();
     }
 
     export function cancelMode() {
         currentMode?.undo()
         currentMode = null;
+        currentModeChanged.trigger();
     }
+
+    export function getCurrentMode() {
+        return currentMode;
+    }
+
+    export type ViewerContext = {
+        frontImageOpacity: number;
+        backImageOpacity: number;
+        frontImageMatrix: string;
+        backImageMatrix: string;
+    };
+
+    export let viewerContext: Writable<ViewerContext> = 
+        writable({
+            frontImageOpacity: 1,
+            backImageOpacity: 0,
+            frontImageMatrix: "",
+            backImageMatrix: ""
+        });
 </script>
 
 <script lang="ts">
@@ -42,11 +65,21 @@
     import Image, { type Transform } from "./Image.svelte";
     import { wasKeyInForm, setImageArea, viewerPan, viewerZoomTo, viewerZoom, imageArea, canvasTransform } from "./Viewer";
 	import Canvas from "./Canvas.svelte";
+	import { eventDispatchStore, type EventDispatchStore } from "$lib/misc/EventDispatchStore";
+	import { writable, type Writable } from "svelte/store";
 
     export let frontSelected: string | null;
     export let backSelected: string | null;
     export let scale: number;
-    $: $canvasTransform, frontImage, backImage, applyTransform();
+
+    let frontImage: Image | undefined;
+    let frontTransform: Transform | undefined;
+
+    let backImage: Image | undefined;
+    let backTransform: Transform | undefined;
+
+    $: $canvasTransform, frontImage, 
+        backImage, applyTransform();
 
     let updateSliderScale = (x: Transform) => scale = x.scale;
     let centerZoomToScale = (x: number) => {
@@ -58,24 +91,14 @@
 
     let canvasContainerWidth = 0, canvasContainerHeight = 0;
 
-    let frontImage: Image | undefined;
-    let frontTransform: Transform | undefined;
-    let frontImageOpacity = 1;
-
-    let backImage: Image | undefined;
-    let backTransform: Transform | undefined;
-    let backImageOpacity = 0;
-
     $: canvasContainerWidth, canvasContainerHeight, 
-        frontTransform, backTransform, setImageArea([frontImage, backImage]);
+        frontTransform, 
+        backTransform, 
+        setImageArea([frontImage, backImage]);
 
     function applyTransform() {
-        if (frontImage) {
-            frontImage.setTransform($canvasTransform);
-        }
-        if (backImage) {
-            backImage.setTransform($canvasTransform);
-        }
+        frontImage?.setTransform($canvasTransform);
+        backImage?.setTransform($canvasTransform);
     }
 
     function wheelHandler(e: WheelEvent) {
@@ -91,16 +114,16 @@
         if (e.repeat || wasKeyInForm(e)) return;
         switch (e.key) {
             case "f":
-                frontImageOpacity = 1;
-                backImageOpacity = 0;
+                $viewerContext.frontImageOpacity = 1;
+                $viewerContext.backImageOpacity = 0;
                 break;
             case "b":
-                frontImageOpacity = 0;
-                backImageOpacity = 1;
+                $viewerContext.frontImageOpacity = 0;
+                $viewerContext.backImageOpacity = 1;
                 break;
             case "d":
-                frontImageOpacity = 0.5;
-                backImageOpacity = 1;
+                $viewerContext.frontImageOpacity = 0.5;
+                $viewerContext.backImageOpacity = 1;
                 break;
         }
     }
@@ -118,14 +141,16 @@
 
     {#if backSelected}
         <Image path={convertFileSrc(backSelected)} 
-                opacity={backImageOpacity}
+                opacity={$viewerContext.backImageOpacity}
+                matrix={$viewerContext.backImageMatrix}
                 bind:this={backImage} 
                 bind:transform={backTransform}
                 />
     {/if}
     {#if frontSelected}
         <Image path={convertFileSrc(frontSelected)} 
-                opacity={frontImageOpacity}
+                opacity={$viewerContext.frontImageOpacity}
+                matrix={$viewerContext.frontImageMatrix}
                 bind:this={frontImage} 
                 bind:transform={frontTransform}
                 />

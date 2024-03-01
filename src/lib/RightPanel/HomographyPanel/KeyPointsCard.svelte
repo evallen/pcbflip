@@ -1,19 +1,22 @@
 <script lang="ts">
     import Card from "$lib/components/ui/card/card.svelte";
     import * as Table from '$lib/components/ui/table';
-    import { KeyPointStatus, KeyPointCollection, frontKeyPoints } from './Homography';
+    import { KeyPointStatus, KeyPointCollection } from './Homography';
     import { X } from 'lucide-svelte';
     import Button from '$lib/components/ui/button/button.svelte';
     import { type Writable } from "svelte/store";
-    import { editFrontKeyPointsMode } from "./HomographyRenderer.svelte";
-    import { switchToMode, cancelMode } from "$lib/ViewerPanel/Viewer.svelte";
+    import { switchToMode, cancelMode, getCurrentMode, currentModeChanged, type Mode } from "$lib/ViewerPanel/Viewer.svelte";
 
     export let title: String;
     export let keyPoints: Writable<KeyPointCollection>;
+    export let editMode: Mode;
+
+    let currentMode: Mode | null;
+    $: $currentModeChanged, currentMode = getCurrentMode();
 
     function rowClicked(e: MouseEvent, row: number) {
         $keyPoints.nextPointIndex = row;
-        switchToMode(editFrontKeyPointsMode);
+        switchToMode(editMode);
     }
 
     function onKeyDown(e: KeyboardEvent) {
@@ -30,8 +33,16 @@
         <p
         class="scroll-m-20 text-xl tracking-tight">{title}</p>
         <Button 
-        on:click={(e) => switchToMode(editFrontKeyPointsMode)}
-        class="ml-auto" variant="outline">View</Button>
+        on:click={(e) => {
+            if (currentMode === editMode) {
+                cancelMode();
+            } else {
+                switchToMode(editMode)
+            }
+        }}
+        class="ml-auto" variant="outline">
+            {currentMode === editMode ? 'Cancel (Esc)' : 'View'}
+        </Button>
     </div>
     <Table.Root>
         <Table.Header>

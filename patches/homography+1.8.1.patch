@@ -1,0 +1,13 @@
+diff --git a/node_modules/homography/Homography.js b/node_modules/homography/Homography.js
+index 9432a38..a6bccfd 100644
+--- a/node_modules/homography/Homography.js
++++ b/node_modules/homography/Homography.js
+@@ -28,7 +28,7 @@
+ 
+     
+ const availableTransforms = ['auto', 'piecewiseaffine', 'affine', 'projective'];
+-const maxCSSDecimal = 5;
++const maxCSSDecimal = 8;
+ 
+ // It is thought for 2D
+ const dims = 2;

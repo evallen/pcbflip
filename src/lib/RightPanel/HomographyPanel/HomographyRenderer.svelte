@@ -1,68 +1,120 @@
 <script lang="ts" context="module">
-    export let editFrontKeyPointsMode: Mode = {
-        begin: () => {
-            frontKeyPoints.update(coll => { coll.show = true; return coll });
-            canvas.dimBackground(true);
-        },
-        undo: () => {
-            frontKeyPoints.update(coll => { coll.show = false; return coll });
-            canvas.dimBackground(false);
-        }
-    }
-    
-    export let editBackKeyPointsMode: Mode = {
-        begin: () => {
-            backKeyPoints.update(coll => { coll.show = true; return coll });
-            canvas.dimBackground(true);
-        },
-        undo: () => {
-            backKeyPoints.update(coll => { coll.show = false; return coll });
-            canvas.dimBackground(false);
-        }
-    }
+	export let editFrontKeyPointsMode: Mode = {
+		context: {},
+		begin() {
+			frontKeyPoints.update((coll) => {
+				coll.show = true;
+				return coll;
+			});
+			viewerContext.update((ctx) => {
+				ctx.frontImageOpacity = 1;
+				ctx.backImageOpacity = 0;
+				return ctx;
+			});
+			canvas.dimBackground(true);
+		},
+		undo() {
+			frontKeyPoints.update((coll) => {
+				coll.show = false;
+				coll.nextPointIndex = null;
+				return coll;
+			});
+			canvas.dimBackground(false);
+		}
+	};
+
+	export let editBackKeyPointsMode: Mode = {
+        context: {},
+		begin() {
+			backKeyPoints.update((coll) => {
+				coll.show = true;
+				return coll;
+			});
+            viewerContext.update((ctx) => {
+                ctx.frontImageOpacity = 0;
+                ctx.backImageOpacity = 1;
+                return ctx;
+            })
+			canvas.dimBackground(true);
+		},
+		undo() {
+			backKeyPoints.update((coll) => {
+				coll.show = false;
+				return coll;
+			});
+			canvas.dimBackground(false);
+		}
+	};
 </script>
 
 <script lang="ts">
-    import { canvas, type Mode } from '$lib/ViewerPanel/Viewer.svelte';
-    import { frontKeyPoints, backKeyPoints, KeyPointStatus, KeyPointCollection } from './Homography';
-    import Konva from 'konva';
+	import Viewer, { canvas, viewerContext, type Mode, getCurrentMode } from '$lib/ViewerPanel/Viewer.svelte';
+	import { frontKeyPoints, backKeyPoints, KeyPointStatus, KeyPointCollection } from './Homography';
+	import Konva from 'konva';
 	import type { Vector2d } from '$lib/misc/types';
 	import { onMount } from 'svelte';
 	import type { KonvaMouseEvent } from 'svelte-konva';
 
 	let markers: Konva.Group[] = [];
 
-    onMount(() => {
-        frontKeyPoints.subscribe((frontKeyPoints) => {
-            if (!canvas) return;
+	onMount(() => {
+		frontKeyPoints.subscribe((frontKeyPoints) => {
+			if (!canvas) return;
 
-            let ctx = canvas.getContext();
-            let mainLayer = ctx.mainLayer;
-            let stage = ctx.stage;
+			let ctx = canvas.getContext();
+			let mainLayer = ctx.mainLayer;
+			let stage = ctx.stage;
 
-            markers.forEach((marker) => marker.remove());
+			markers.forEach((marker) => marker.remove());
 
-            if (frontKeyPoints.show) {
-                markers = frontKeyPoints.points
-                    .filter((point) => point.status === KeyPointStatus.Set)
-                    .map((point, idx) => createMarker(point.pos, idx.toString(), stage));
-                markers.forEach((marker) => mainLayer.add(marker));
-            }
+			if (frontKeyPoints.show) {
+				markers = frontKeyPoints.points
+					.filter((point) => point.status === KeyPointStatus.Set)
+					.map((point, idx) => createMarker(point.pos, idx.toString(), stage));
+				markers.forEach((marker) => mainLayer.add(marker));
+			}
 
-            canvas.fixScales();
-        });
+			canvas.fixScales();
+		});
 
-        canvas.addClickListener(onclick);
-    });
+		backKeyPoints.subscribe((backKeyPoints) => {
+			if (!canvas) return;
 
-    function onclick(e: KonvaMouseEvent) {
-        let mainLayer = canvas.getContext().mainLayer;
+			let ctx = canvas.getContext();
+			let mainLayer = ctx.mainLayer;
+			let stage = ctx.stage;
+
+			markers.forEach((marker) => marker.remove());
+
+			if (backKeyPoints.show) {
+				markers = backKeyPoints.points
+					.filter((point) => point.status === KeyPointStatus.Set)
+					.map((point, idx) => createMarker(point.pos, idx.toString(), stage));
+				markers.forEach((marker) => mainLayer.add(marker));
+			}
+
+			canvas.fixScales();
+		});
+
+		canvas.addClickListener(onclick);
+	});
+
+	function onclick(e: KonvaMouseEvent) {
+		let mainLayer = canvas.getContext().mainLayer;
 		let pointerPos = mainLayer.getRelativePointerPosition();
 		if (!pointerPos) return;
 
-        $frontKeyPoints.setNextKeyPoint(pointerPos);
-        $frontKeyPoints = $frontKeyPoints
-    }
+        switch (getCurrentMode()) {
+            case editFrontKeyPointsMode:
+                $frontKeyPoints.setNextKeyPoint(pointerPos);
+                $frontKeyPoints = $frontKeyPoints;
+                break;
+            case editBackKeyPointsMode:
+                $backKeyPoints.setNextKeyPoint(pointerPos);
+                $backKeyPoints = $backKeyPoints;
+                break;
+        }
+	}
 
 	function createMarker(pos: Vector2d, labelStr: string, stage: Konva.Stage) {
 		const size = 60;
